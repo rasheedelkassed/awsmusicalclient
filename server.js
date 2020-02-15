@@ -8,15 +8,6 @@ const app = express();
 
 app.set('view engine', 'pug');
 
-//setting the credentials
-//The region should be the region of the bucket that you created
-//Visit this if you have any confusion - https://docs.aws.amazon.com/general/latest/gr/rande.html
-// AWS.config.update({
-//     accessKeyId: keys.iam_access_id,
-//     secretAccessKey: keys.iam_secret,
-//     region: 'sample-region',
-// });
-
 //Creating a new instance of S3:
 const s3= new AWS.S3();
 
@@ -32,9 +23,9 @@ app.get('/getSong/:file_name*', async (req,res)=>{
     res.redirect(songUrl);
   });
 
-//listening to server 3000
-app.listen(3000,()=>{
-    console.log('Server running on port 3000');
+//listening to server 80
+app.listen(80,()=>{
+    console.log('Server running on port 80');
 });
 
 
