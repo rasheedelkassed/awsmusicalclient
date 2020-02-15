@@ -23,9 +23,9 @@ app.get('/getSong/:file_name*', async (req,res)=>{
     res.redirect(songUrl);
   });
 
-//listening to server 80
-app.listen(80,()=>{
-    console.log('Server running on port 80');
+//listening to server 3000
+app.listen(3000,()=>{
+    console.log('Server running on port 3000');
 });
 
 
