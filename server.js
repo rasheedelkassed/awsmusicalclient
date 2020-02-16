@@ -79,7 +79,12 @@ function createArtistList(list){
         let album = split_song[1];
         let song = split_song[2];
         if(artistList[artist] != null){
-            artistList[artist][album].push(song);
+            if(artistList[artist][album] == null){
+                artistList[artist][album] = [];
+                artistList[artist][album].push(song);
+            } else {
+                artistList[artist][album].push(song);
+            }
         } else {
             artistList[artist] = {};
             artistList[artist][album] = [];
