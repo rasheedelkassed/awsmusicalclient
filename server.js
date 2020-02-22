@@ -200,7 +200,7 @@ async function getSongsForAlbum(album) {
         ExpressionAttributeValues: {
             ':album': { S: album }
         },
-        KeyConditionExpression: 'PK = :artist'
+        KeyConditionExpression: 'PK = :album'
     }
 
     let result = await dynamodb.query(getParams).promise()
