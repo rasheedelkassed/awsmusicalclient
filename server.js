@@ -1,46 +1,59 @@
 const express = require('express');
-const multer  = require('multer');
+const multer = require('multer');
 const AWS = require('aws-sdk');
-const fs=require('fs');
-// const keys = require('./keys.js');
+const fs = require('fs');
 
 const app = express();
 
 app.set('view engine', 'pug');
 
-//Creating a new instance of S3:
-const s3= new AWS.S3();
+const s3 = new AWS.S3();
+const dynamodb = new AWS.DynamoDB({ region: 'us-east-1' });
 
-app.get('/', async (req,res)=>{
-    
+app.get('/', async (req, res) => {
     let list = await getAllSongs(res);
-    res.render('index', {keys: createArtistList(list)})
-  });
+    res.render('index', { keys: createArtistList(list) })
+});
 
+app.get('/genres', async (req, res) => {
+    res.json(await getGenresDDB());
+});
 
-app.get('/getSong/:file_name*', async (req,res)=>{
-    let songUrl = await getSong(req.params.file_name + req.params[0]);
-    res.redirect(songUrl);
-  });
+app.get('/artists/for/genre', async (req, res) => {
+    res.json(await getArtistForGenre(req.query.genre));
+});
+
+app.get('/albums/for/artist', async (req, res) => {
+    res.json(await getAlbumsForArtist(req.query.artist));
+});
+
+app.get('/songs/for/album', async (req, res) => {
+    res.json(await getSongsForAlbum(req.query.album));
+});
+
+app.get('/song', async (req, res) => {
+    res.json(await getSongDDB(req.query.song));
+});
 
 //listening to server 3000
-app.listen(3000,()=>{
+app.listen(3000, () => {
     console.log('Server running on port 3000');
 });
 
 
-async function getAllSongs(res){
+async function getAllSongs(res) {
     const getParams = {
         Bucket: 'awsmusicservice'
     };
 
     let allKeys = [];
 
-    const data = await s3.listObjects(getParams).promise().catch(
-        (err) => {
-            console.error(err, err.stack);
-            Promise.reject(err);
-        });
+    const data = await s3.listObjects(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
 
     data.Contents.forEach((song) => {
         allKeys.push(song.Key);
@@ -48,29 +61,23 @@ async function getAllSongs(res){
     return allKeys;
 }
 
-async function getSong(filename){
-
+async function getSongURL(filename) {
     const getParams = {
-      Bucket: 'awsmusicservice',
-      Key: filename
+        Bucket: 'awsmusicservice',
+        Key: filename
     };
-
-    // const data = await s3.getObject(getParams).promise().catch(
-    //     (err) => {
-    //         console.error(err, err.stack);
-    //     });
-
-    //     return res.send(data.Body);
-    const url =  await s3.getSignedUrlPromise('getObject', getParams).catch(
-        (err) => {
-            console.error(err, err.stack);
-            Promise.reject(err);
-        });
-    return await url;
+    const url = await s3.getSignedUrlPromise('getObject', getParams)
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+    console.log(url);
+    return url;
 }
 
 //list items look like artist/album/song
-function createArtistList(list){
+function createArtistList(list) {
     let artistList = {};
 
     list.forEach(key => {
@@ -78,8 +85,8 @@ function createArtistList(list){
         let artist = split_song[0];
         let album = split_song[1];
         let song = split_song[2];
-        if(artistList[artist] != null){
-            if(artistList[artist][album] == null){
+        if (artistList[artist] != null) {
+            if (artistList[artist][album] == null) {
                 artistList[artist][album] = [];
                 artistList[artist][album].push(song);
             } else {
@@ -91,6 +98,121 @@ function createArtistList(list){
             artistList[artist][album].push(song);
         }
     });
-    
+
     return artistList;
+}
+
+async function getGenresDDB() {
+    let getParams = {
+        TableName: "Music-Table",
+        ExpressionAttributeValues: {
+            ':genre': { S: "genres" }
+        },
+        KeyConditionExpression: 'PK = :genre'
+    }
+
+    let result = await dynamodb.query(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+
+    let returnObject = [];
+    result.Items.forEach((genreObject) => {
+        returnObject.push(genreObject["SK"]["S"]);
+    });
+    return returnObject;
+}
+
+async function getSongDDB(songTitle) {
+    let getParams = {
+        TableName: "Music-Table",
+        ExpressionAttributeValues: {
+            ':songTitle': { S: songTitle }
+        },
+        KeyConditionExpression: 'PK = :songTitle'
+    }
+
+    let result = await dynamodb.query(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+
+    let songURL = [];
+    result.Items.forEach((songObject) => {
+        songURL.push(songObject["SK"]["S"]);
+    });
+    return await getSongURL(songURL[0]);
+}
+
+async function getArtistForGenre(genre) {
+    let getParams = {
+        TableName: "Music-Table",
+        ExpressionAttributeValues: {
+            ':genre': { S: genre }
+        },
+        KeyConditionExpression: 'PK = :genre'
+    }
+
+    let result = await dynamodb.query(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+
+    let returnObject = [];
+    result.Items.forEach((artistObject) => {
+        returnObject.push(artistObject["SK"]["S"]);
+    });
+    return returnObject;
+}
+
+async function getAlbumsForArtist(artist) {
+    let getParams = {
+        TableName: "Music-Table",
+        ExpressionAttributeValues: {
+            ':artist': { S: artist }
+        },
+        KeyConditionExpression: 'PK = :artist'
+    }
+
+    let result = await dynamodb.query(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+
+    let returnObject = [];
+    result.Items.forEach((albumObject) => {
+        returnObject.push(albumObject["SK"]["S"]);
+    });
+    return returnObject;
+}
+
+async function getSongsForAlbum(album) {
+    let getParams = {
+        TableName: "Music-Table",
+        ExpressionAttributeValues: {
+            ':album': { S: album }
+        },
+        KeyConditionExpression: 'PK = :artist'
+    }
+
+    let result = await dynamodb.query(getParams).promise()
+        .catch(
+            (err) => {
+                console.error(err, err.stack);
+                Promise.reject(err);
+            });
+
+    let returnObject = [];
+    result.Items.forEach((songObject) => {
+        returnObject.push(songObject["SK"]["S"]);
+    });
+    return returnObject;
 }
