@@ -2,10 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const fs = require('fs');
+const cors = require('cors');
 
 const app = express();
 
-app.set('view engine', 'pug');
+app.use(cors());
 
 const s3 = new AWS.S3();
 const dynamodb = new AWS.DynamoDB({ region: 'us-east-1' });
