@@ -4,6 +4,7 @@ const AWS = require('aws-sdk');
 const fs = require('fs');
 const cors = require('cors');
 
+
 const app = express();
 
 app.use(cors());
@@ -34,6 +35,17 @@ app.get('/songs/for/album', async (req, res) => {
 
 app.get('/song', async (req, res) => {
     res.json(await getSongDDB(req.query.song));
+});
+
+app.post('/save-user', async (req, res) => {
+    let userID = req.query.id;
+    let name = req.query.name;
+    let email = req.query.email;
+
+    putDBItem("users", userID);
+    putDBItem(userID, name);
+    putDBItem(name, email);
+
 });
 
 //listening to server 3000
@@ -216,4 +228,20 @@ async function getSongsForAlbum(album) {
         returnObject.push(songObject["SK"]["S"]);
     });
     return returnObject;
+}
+
+async function putDBItem(PK, SK) {
+    let DBParams = {
+        TableName: "User-Table",
+        Item: { "PK": {"S": PK},"SK": {"S": SK} }
+    };
+    dynamodb.putItem(DBParams).promise()
+        .then(
+            console.log("Item added to dynamoDB")
+        )
+        .catch(
+            (err) => {
+            console.error(err, err.stack);
+            });
+    return;
 }
