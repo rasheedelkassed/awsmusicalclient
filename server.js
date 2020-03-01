@@ -43,8 +43,8 @@ app.post('/save-user', async (req, res) => {
     let email = req.query.email;
 
     putDBItem("users", userID);
-    putDBItem(userID, name);
-    putDBItem(name, email);
+    putDBItem(userID, email);
+    putDBItem(email, name);
 
 });
 
@@ -231,10 +231,19 @@ async function getSongsForAlbum(album) {
 }
 
 async function putDBItem(PK, SK) {
-    let DBParams = {
-        TableName: "User-Table",
-        Item: { "PK": {"S": PK},"SK": {"S": SK} }
+    let DBParams = {};
+    if(SK == ""){
+        DBParams = {
+            TableName: "User-Table",
+            Item: { "PK": {"S": PK},"SK": {"S": "NULL"} }
+        };
+    } else {
+        DBParams = {
+            TableName: "User-Table",
+            Item: { "PK": {"S": PK},"SK": {"S": SK} }
+        };
     };
+    
     dynamodb.putItem(DBParams).promise()
         .then(
             console.log("Item added to dynamoDB")
