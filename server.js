@@ -37,16 +37,16 @@ app.get('/song', async (req, res) => {
     res.json(await getSongDDB(req.query.song));
 });
 
-app.post('/save-user', async (req, res) => {
-    let userID = req.query.id;
-    let name = req.query.name;
-    let email = req.query.email;
+// app.post('/save-user', async (req, res) => {
+//     let userID = req.query.id;
+//     let name = req.query.name;
+//     let email = req.query.email;
 
-    putDBItem("users", userID);
-    putDBItem(userID, email);
-    putDBItem(email, name);
+//     putDBItem("users", userID);
+//     putDBItem(userID, email);
+//     putDBItem(email, name);
 
-});
+// });
 
 //listening to server 3000
 app.listen(3000, () => {
