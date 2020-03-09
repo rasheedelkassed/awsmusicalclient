@@ -1,16 +1,19 @@
 const express = require('express');
-const multer = require('multer');
 const AWS = require('aws-sdk');
-const fs = require('fs');
 const cors = require('cors');
+const bodyParser = require('body-parser');
+
 
 
 const app = express();
 
 app.use(cors());
+app.use(bodyParser.json());
 
 const s3 = new AWS.S3();
 const dynamodb = new AWS.DynamoDB({ region: 'us-east-1' });
+const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
+
 
 app.get('/', async (req, res) => {
     let list = await getAllSongs(res);
@@ -37,16 +40,11 @@ app.get('/song', async (req, res) => {
     res.json(await getSongDDB(req.query.song));
 });
 
-// app.post('/save-user', async (req, res) => {
-//     let userID = req.query.id;
-//     let name = req.query.name;
-//     let email = req.query.email;
-
-//     putDBItem("users", userID);
-//     putDBItem(userID, email);
-//     putDBItem(email, name);
-
-// });
+app.post('/play', async (req, res) => {
+    console.log(req.body.song);
+    //sendSQSPlay(req.body.artist, req.body.album, req.body.song);
+    res.status(201).send();
+});
 
 //listening to server 3000
 app.listen(3000, () => {
@@ -232,25 +230,55 @@ async function getSongsForAlbum(album) {
 
 async function putDBItem(PK, SK) {
     let DBParams = {};
-    if(SK == ""){
+    if (SK == "") {
         DBParams = {
             TableName: "User-Table",
-            Item: { "PK": {"S": PK},"SK": {"S": "NULL"} }
+            Item: { "PK": { "S": PK }, "SK": { "S": "NULL" } }
         };
     } else {
         DBParams = {
             TableName: "User-Table",
-            Item: { "PK": {"S": PK},"SK": {"S": SK} }
+            Item: { "PK": { "S": PK }, "SK": { "S": SK } }
         };
     };
-    
+
     dynamodb.putItem(DBParams).promise()
         .then(
             console.log("Item added to dynamoDB")
         )
         .catch(
             (err) => {
-            console.error(err, err.stack);
+                console.error(err, err.stack);
             });
     return;
+}
+
+async function sendSQSPlay(artist, album, song) {
+    let params = {
+        DelaySeconds: 10,
+        MessageAttributes: {
+            "artist": {
+                DataType: "String",
+                StringValue: artist
+            },
+            "album": {
+                DataType: "String",
+                StringValue: album
+            },
+            "song": {
+                DataType: "String",
+                StringValue: song
+            }
+        },
+        MessageBody: "Play counted for song: " + song,
+        QueueUrl: "https://sqs.us-east-1.amazonaws.com/945477820389/reporting"
+    };
+
+    sqs.sendMessage(params, function (err, data) {
+        if (err) {
+            console.log("Error", err);
+        } else {
+            console.log("Success", data.MessageId);
+        }
+    });
 }
