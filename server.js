@@ -41,9 +41,8 @@ app.get('/song', async (req, res) => {
 });
 
 app.post('/play', async (req, res) => {
-    console.log(req.body.song);
-    //sendSQSPlay(req.body.artist, req.body.album, req.body.song);
-    //res.status(201).json();
+    sendSQSPlay(req.body.artist, req.body.album, req.body.song);
+    res.status(201).send();
 });
 
 //listening to server 3000
