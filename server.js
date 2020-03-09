@@ -42,8 +42,8 @@ app.get('/song', async (req, res) => {
 
 app.post('/play', async (req, res) => {
     console.log(req.body.song);
-    //sendSQSPlay(req.body.artist, req.body.album, req.body.song);
-    res.status(201).send();
+    sendSQSPlay(req.body.artist, req.body.album, req.body.song);
+    res.status(201).json();
 });
 
 //listening to server 3000
@@ -83,7 +83,6 @@ async function getSongURL(filename) {
                 console.error(err, err.stack);
                 Promise.reject(err);
             });
-    console.log(url);
     return url;
 }
 
