@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 
 const s3 = new AWS.S3();
 const dynamodb = new AWS.DynamoDB({ region: 'us-east-1' });
-const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
+const sqs = new AWS.SQS({ apiVersion: '2012-11-05', region: 'us-east-1' });
 
 
 app.get('/', async (req, res) => {
